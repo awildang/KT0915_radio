@@ -111,24 +111,13 @@ void setup()
   display.setCursor(32,32);
   display.print("DSP Radio");
   display.setCursor(32,40);
-  display.print("v0.40");
-  display.setCursor(32,48);
-  display.print("Modified");
+  display.print("v3.05");
   display.setCursor(32,56);
-  display.print("Firmware");
+  display.print("ITU Reg 2");
   display.display();
   
   delay(2000);
-  display.setTextColor(BLACK);
-  display.setCursor(32,32);
-  display.print("DSP Radio");
-  display.setCursor(32,40);
-  display.print("v0.40");
-  display.setCursor(32,48);
-  display.print("Modified");
-  display.setCursor(32,56);
-  display.print("Firmware");
-  display.display();
+  display.clearDisplay();
   display.setTextColor(WHITE);
 
   Serial.begin(9600);
@@ -167,7 +156,7 @@ void rotaryPressed()
   //delay(100);
   rotarySwitchState = digitalRead(3);
    
-  if (rotarySwitchState == LOW) {
+  if(rotarySwitchState == LOW) {
     modeSetting = modeSetting + 1;
     previousRotarySwitchState = HIGH;
     
@@ -181,13 +170,13 @@ void rotaryPressed()
     //Serial.println();
   
   } else 
-  if (rotarySwitchState == HIGH && previousRotarySwitchState == HIGH) {
+  if(rotarySwitchState == HIGH && previousRotarySwitchState == HIGH) {
     previousRotarySwitchState = LOW;
     rotarySwitchValue = 0; 
   
     //Serial.println(" switchVal: Reset");
   }
-  if( modeSetting > 11){ modeSetting = 0;} 
+  if(modeSetting > 11){ modeSetting = 0; } 
   digitalReadEvent = HIGH;
   
   Serial.println("- RT Pressed");
@@ -310,7 +299,7 @@ void modeSW(float startFreq)
   radioFreq = finalFreq; 
   display.clearDisplay();  
   display.setCursor(32,32);
-  display.print("SW (AM)");
+  display.print("AM (SW)");
   display.setCursor(32,40);
   display.print(radioFreq);
   display.setCursor(78,40);
@@ -352,7 +341,7 @@ void modeMW(float startFreq)
   radioFreq=finalFreq;
   display.clearDisplay();
   display.setCursor(32,32);
-  display.print("MW (AM)");
+  display.print("AM (MW)");
   display.setCursor(32,40);
   display.print(radioFreq);
   display.setCursor(78,40);
