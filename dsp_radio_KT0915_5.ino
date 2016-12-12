@@ -8,7 +8,7 @@
 // - removed unused variables and renamed used variables for clarity & troubleshooting.
 // - added a volume level for mono channels.  Including displaying which are mono modes.
 // - added Serial() functions to debug code.  Use 9600 baud.
-// - partially fixed bug with digital button reseting to default frequency, when tuning.  
+// - partially fixed bug with digital button resetting to default frequency, when tuning.  
 // - modified SW modes to reflect Amateur Radio (ITU Region 2) frequencies.
 // - bug added - need to hold digital button for one second, to properly reset frequency on mode change.
 //////////////////////////////////////////////
@@ -23,14 +23,15 @@ Adafruit_SSD1306 display(OLED_RESET);
 
 bool digitalReadEvent, previousRotarySwitchState;
 int readBits15_8, readBits7_0, savedBits;
-int volumeBits = 0;
+//int volumeBits = 0;
 int displayCounter1, displayCounter2 = 0;
 int terminal_1 = 2;
 int terminal_2 = 4;
+volatile int modeSetting = 0; /// modeSetting = 0:AM, modeSetting = 1:FM
 unsigned int modeSwitchEnabled;
 volatile int rotarySwitchValue = 0;
 volatile char rotaryDirectionState = 0;
-volatile int modeSetting = 0; /// modeSetting = 0:AM, modeSetting = 1:FM
+
 
 void writeI2C(int addressChip, int addressRegister, int writeBits15_8, int writeBits7_0)
 {
@@ -153,7 +154,7 @@ void loop()
 void rotaryPressed()
 {
   bool rotarySwitchState = 0; 
-  //delay(100);
+  delay(500);
   rotarySwitchState = digitalRead(3);
    
   if(rotarySwitchState == LOW) {
@@ -168,12 +169,11 @@ void rotaryPressed()
     //Serial.print(" switchVal: ");
     //Serial.print(rotarySwitchValue);
     //Serial.println();
-  
   } else 
   if(rotarySwitchState == HIGH && previousRotarySwitchState == HIGH) {
     previousRotarySwitchState = LOW;
     rotarySwitchValue = 0; 
-  
+    
     //Serial.println(" switchVal: Reset");
   }
   if(modeSetting > 11){ modeSetting = 0; } 
@@ -282,12 +282,11 @@ void modeFM(float startFreq)
   float radioFreq;
   unsigned int initialFreq, finalFreq, regBits15_8, regBits7_0;
   
-  // Configure KA0915 Registers via I2C Start
   // Set AMSYSCFG (FM Mode/-58dB Vol)
   writeI2C(RADIO,0x16,0b00000000,0b00000010);
   // Set GPIOCFG (Key Controlled Volume inc/dec)
   writeI2C(RADIO,0x1D,0b00000000,0b00000100);   
-  // Configure KA0915 Registers via I2C End
+ 
   initialFreq = startFreq * 20.0;
   finalFreq = initialFreq + rotarySwitchValue * 2;
   regBits15_8 = (finalFreq>>8 | 0b10000000);
@@ -326,14 +325,11 @@ void modeMW(float startFreq)
   float radioFreq;
   unsigned int initialFreq, finalFreq, regBits15_8, regBits7_0;
   
-  // Configure KA0915 Registers via I2C Start
   // Set AMSYSCFG (AM Mode/AFC Disabled)
   writeI2C(RADIO,0x16,0b10000000,0b00000011);
-  // writeI2C(RADIO,0x16,0b10000000,0b11000011);
-    // Set AMDSP (4KHz/Inverse the Left Audio)
+  // Set AMDSP (4KHz/Inverse the Left Audio)
   writeI2C(RADIO,0x22,0b10100010,0b10001100);
-  // writeI2C(RADIO,0x22,0b01010100,0b00000000);
-  // Configure KA0915 Registers via I2C End
+
   initialFreq = startFreq;
   finalFreq = initialFreq + rotarySwitchValue * 10;
   regBits15_8 = (finalFreq>>8 | 0b10000000);
@@ -372,13 +368,11 @@ void modeSW(float startFreq)
   int radioFreq;
   unsigned int initialFreq, finalFreq, regBits15_8, regBits7_0;
 
-  // Configure KA0915 Registers via I2C Start
   // Set AMSYSCFG (AM Mode/AFC Disabled)
   writeI2C(RADIO,0x16,0b10000000,0b00000011);
   // Set AMDSP (4KHz/Inverse the Left Audio)
   writeI2C(RADIO,0x22,0b10100010,0b10001100);  
-  // writeI2C(RADIO,0x22,0b01010100,0b00000000);
-  // Configure KA0915 Registers via I2C End
+
   initialFreq = startFreq;
   finalFreq = initialFreq + rotarySwitchValue * 5;
   regBits15_8 = (finalFreq>>8 | 0b10000000);
