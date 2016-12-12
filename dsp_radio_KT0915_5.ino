@@ -43,16 +43,16 @@ void writeI2C(int addressChip, int addressRegister, int writeBits15_8, int write
     delay(5);
   Wire.endTransmission();
 
-  Serial.print("- I2C Write;");
-  Serial.print(" addrChip: 0x");
-  Serial.print(addressChip, HEX);
-  Serial.print(" addrReg: 0x");
-  Serial.print(addressRegister, HEX);
-  Serial.print(" Bits15_8: ");
-  Serial.print(writeBits15_8, BIN);
-  Serial.print(" Bits7_0: ");
-  Serial.print(writeBits7_0, BIN);
-  Serial.println();
+  //Serial.print("- I2C Write;");
+  //Serial.print(" addrChip: 0x");
+  //Serial.print(addressChip, HEX);
+  //Serial.print(" addrReg: 0x");
+  //Serial.print(addressRegister, HEX);
+  //Serial.print(" Bits15_8: ");
+  //Serial.print(writeBits15_8, BIN);
+  //Serial.print(" Bits7_0: ");
+  //Serial.print(writeBits7_0, BIN);
+  //Serial.println();
 }
 
 void readI2C(int addressChip, int addressRegister)
@@ -131,7 +131,7 @@ void loop()
   displayCounter1 = (millis() - 1000 * displayCounter2); 
   if(displayCounter1 > 500){
     displayCounter2++;
-    displayFMRSSI();
+    displayRSSIVOL();
     displayCounter1 = 0;
   }
   if(digitalReadEvent == HIGH) {
@@ -212,7 +212,7 @@ void rotaryDirection(void)
   }
 }
 
-void displayFMRSSI()
+void displayRSSIVOL()
 {
   int maskStereo, maskPLL, previousBits;
   
@@ -277,37 +277,40 @@ void displayFMRSSI()
   }
 }
 
-void modeSW(float startFreq)
+void modeFM(float startFreq)
 {
-  int radioFreq;
+  float radioFreq;
   unsigned int initialFreq, finalFreq, regBits15_8, regBits7_0;
-
+  
   // Configure KA0915 Registers via I2C Start
-  // Set AMSYSCFG (AM Mode/AFC Disabled)
-  writeI2C(RADIO,0x16,0b10000000,0b00000011);
-  // Set AMDSP (4KHz/Inverse the Left Audio)
-  writeI2C(RADIO,0x22,0b10100010,0b10001100);  
-  // writeI2C(RADIO,0x22,0b01010100,0b00000000);
+  // Set AMSYSCFG (FM Mode/-58dB Vol)
+  writeI2C(RADIO,0x16,0b00000000,0b00000010);
+  // Set GPIOCFG (Key Controlled Volume inc/dec)
+  writeI2C(RADIO,0x1D,0b00000000,0b00000100);   
   // Configure KA0915 Registers via I2C End
-  initialFreq = startFreq;
-  finalFreq = initialFreq + rotarySwitchValue * 5;
+  initialFreq = startFreq * 20.0;
+  finalFreq = initialFreq + rotarySwitchValue * 2;
   regBits15_8 = (finalFreq>>8 | 0b10000000);
   regBits7_0 = (finalFreq & 0b11111111);
   writeI2C(RADIO,0x02,0b00000000,0b00000111);
-  writeI2C(RADIO,0x17,regBits15_8,regBits7_0);
+  writeI2C(RADIO,0x03,regBits15_8,regBits7_0);
   
-  radioFreq = finalFreq; 
-  display.clearDisplay();  
+  readI2C(RADIO,0x13);
+  regBits15_8 = (readBits15_8<<8);
+  regBits7_0 = (readBits7_0);
+  radioFreq = (regBits15_8 | regBits7_0) / 20.0;
+  
+  display.clearDisplay();
   display.setCursor(32,32);
-  display.print("AM (SW)");
+  display.print("FM (VHF)");
   display.setCursor(32,40);
   display.print(radioFreq);
-  display.setCursor(78,40);
-  display.print("KHz ");
+  display.setCursor(70,40);
+  display.print("MHz");
   display.display();
-  digitalReadEvent = LOW; 
-    
-  Serial.print("- SW Values;");
+  digitalReadEvent = LOW;  
+  
+  Serial.print("- FM Values;");
   Serial.print(" initFreq: ");
   Serial.print(initialFreq);
   Serial.print(" finFreq: ");
@@ -338,7 +341,11 @@ void modeMW(float startFreq)
   writeI2C(RADIO,0x02,0b00000000,0b00000111);
   writeI2C(RADIO,0x17,regBits15_8,regBits7_0);
   
-  radioFreq=finalFreq;
+  readI2C(RADIO,0x13);
+  regBits15_8 = (readBits15_8<<8);
+  regBits7_0 = (readBits7_0);
+  radioFreq = (regBits15_8 | regBits7_0);
+  
   display.clearDisplay();
   display.setCursor(32,32);
   display.print("AM (MW)");
@@ -360,36 +367,41 @@ void modeMW(float startFreq)
   Serial.println(radioFreq);
 }
 
-void modeFM(float startFreq)
+void modeSW(float startFreq)
 {
-  float radioFreq;
+  int radioFreq;
   unsigned int initialFreq, finalFreq, regBits15_8, regBits7_0;
-  
+
   // Configure KA0915 Registers via I2C Start
-  // Set AMSYSCFG (FM Mode/-58dB Vol)
-  writeI2C(RADIO,0x16,0b00000000,0b00000010);
-  // Set GPIOCFG (Key Controlled Volume inc/dec)
-  writeI2C(RADIO,0x1D,0b00000000,0b00000100);   
+  // Set AMSYSCFG (AM Mode/AFC Disabled)
+  writeI2C(RADIO,0x16,0b10000000,0b00000011);
+  // Set AMDSP (4KHz/Inverse the Left Audio)
+  writeI2C(RADIO,0x22,0b10100010,0b10001100);  
+  // writeI2C(RADIO,0x22,0b01010100,0b00000000);
   // Configure KA0915 Registers via I2C End
-  initialFreq = startFreq * 20.0;
-  finalFreq = initialFreq + rotarySwitchValue * 2;
+  initialFreq = startFreq;
+  finalFreq = initialFreq + rotarySwitchValue * 5;
   regBits15_8 = (finalFreq>>8 | 0b10000000);
   regBits7_0 = (finalFreq & 0b11111111);
   writeI2C(RADIO,0x02,0b00000000,0b00000111);
-  writeI2C(RADIO,0x03,regBits15_8,regBits7_0);
+  writeI2C(RADIO,0x17,regBits15_8,regBits7_0);
   
-  radioFreq=finalFreq/20.0;
-  display.clearDisplay();
+  readI2C(RADIO,0x13);
+  regBits15_8 = (readBits15_8<<8);
+  regBits7_0 = (readBits7_0);
+  radioFreq = (regBits15_8 | regBits7_0);
+   
+  display.clearDisplay();  
   display.setCursor(32,32);
-  display.print("FM (VHF)");
+  display.print("AM (SW)");
   display.setCursor(32,40);
   display.print(radioFreq);
-  display.setCursor(70,40);
-  display.print("MHz");
+  display.setCursor(78,40);
+  display.print("KHz ");
   display.display();
-  digitalReadEvent = LOW;  
-  
-  Serial.print("- FM Values;");
+  digitalReadEvent = LOW; 
+    
+  Serial.print("- SW Values;");
   Serial.print(" initFreq: ");
   Serial.print(initialFreq);
   Serial.print(" finFreq: ");
@@ -399,6 +411,3 @@ void modeFM(float startFreq)
   Serial.print(" disFreq: - ");
   Serial.println(radioFreq);
 }
-
-
-
