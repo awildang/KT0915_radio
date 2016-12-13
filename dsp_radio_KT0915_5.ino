@@ -10,7 +10,7 @@
 // - added Serial() functions to debug code.  Use 9600 baud.
 // - partially fixed bug with digital button resetting to default frequency, when tuning.  
 // - modified SW modes to reflect Amateur Radio (ITU Region 2) frequencies.
-// - bug added - need to hold digital button for one second, to properly reset frequency on mode change.
+// - fixed bug where frequency not resetting after mode change.
 //////////////////////////////////////////////
 #include <SPI.h>
 #include <Wire.h>
@@ -23,7 +23,6 @@ Adafruit_SSD1306 display(OLED_RESET);
 
 bool digitalReadEvent, previousRotarySwitchState;
 int readBits15_8, readBits7_0, savedBits;
-//int volumeBits = 0;
 int displayCounter1, displayCounter2 = 0;
 int terminal_1 = 2;
 int terminal_2 = 4;
@@ -156,28 +155,16 @@ void rotaryPressed()
   bool rotarySwitchState = 0; 
   delay(500);
   rotarySwitchState = digitalRead(3);
-   
-  if(rotarySwitchState == LOW) {
-    modeSetting = modeSetting + 1;
-    previousRotarySwitchState = HIGH;
-    
-    //Serial.print("- RT Pressd;");
-    //Serial.print(" butStateB: ");
-    //Serial.print(rotarySwitchState);
-    //Serial.print(" preStateB: ");
-    //Serial.print(previousRotarySwitchState);
-    //Serial.print(" switchVal: ");
-    //Serial.print(rotarySwitchValue);
-    //Serial.println();
-  } else 
+  
+  if(rotarySwitchState == LOW) { previousRotarySwitchState = HIGH; } 
+  else
   if(rotarySwitchState == HIGH && previousRotarySwitchState == HIGH) {
     previousRotarySwitchState = LOW;
-    rotarySwitchValue = 0; 
-    
-    //Serial.println(" switchVal: Reset");
-  }
+    modeSetting = modeSetting + 1;
+    rotarySwitchValue = 0;
+    digitalReadEvent = HIGH;
+  } 
   if(modeSetting > 11){ modeSetting = 0; } 
-  digitalReadEvent = HIGH;
   
   Serial.println("- RT Pressed");
 }
