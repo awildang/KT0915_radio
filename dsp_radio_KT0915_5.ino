@@ -8,8 +8,8 @@
 // - removed unused variables and renamed used variables for clarity & troubleshooting.
 // - added a volume level for mono channels.  Including displaying which are mono modes.
 // - added Serial() functions to debug code.  Use 9600 baud.
-// - partially fixed bug with digital button resetting to default frequency, when tuning.  
 // - modified SW modes to reflect Amateur Radio (ITU Region 2) frequencies.
+// - fixed bug with digital button resetting to default frequency when tuning.  
 // - fixed bug where frequency not resetting after mode change.
 //////////////////////////////////////////////
 #include <SPI.h>
@@ -127,7 +127,7 @@ void setup()
 
 void loop()
 {
-  // Display RSSI or Volume Update Routine per Second
+  // Display RSSI or Volume Update Routine
   displayCounter1 = (millis() - 1000 * displayCounter2); 
   if(displayCounter1 > 500){
     displayCounter2++;
@@ -153,7 +153,7 @@ void loop()
 void rotaryPressed()
 {
   bool rotarySwitchState = 0; 
-  delay(500);
+  delay(100);
   rotarySwitchState = digitalRead(3);
   
   if(rotarySwitchState == LOW) { previousRotarySwitchState = HIGH; } 
